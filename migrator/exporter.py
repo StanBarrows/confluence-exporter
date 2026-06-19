@@ -94,6 +94,8 @@ def _export_overrides(config: Config) -> Dict[str, object]:
         "include_macro": "transclusion" if s.markdown.includes == "transclusion" else "inline",
         "comments_export": "all" if s.scope.include_comments else "none",
         "skip_unchanged": bool(s.runtime.incremental),
+        # Emit page title/dates/labels into YAML frontmatter (off by default in cme).
+        "page_metadata_in_frontmatter": bool(s.markdown.frontmatter_enabled),
     }
 
 
@@ -178,8 +180,24 @@ def _run(args: List[str], config: Config) -> None:
 
 
 def export_org(config: Config) -> None:
-    """Export every space cme can see (base URL, no /wiki)."""
+    """Export every space cme can see (base URL, no /wiki).
+
+    Note: cme's ``orgs`` does its own space enumeration and ignores our
+    config.yml scope. Prefer :func:`export_spaces` driven by our scope list.
+    """
     _run(["orgs", config.site_root], config)
+
+
+def export_spaces(config: Config, space_urls: List[str]) -> None:
+    """Export an explicit list of space URLs (honors our config.yml scope)."""
+    if not space_urls:
+        raise ExporterError("no in-scope spaces to export")
+    _run(["spaces", *space_urls], config)
+
+
+def space_url(config: Config, key: str) -> str:
+    """Build the cme space URL for a space key."""
+    return f"{config.site_root}/wiki/spaces/{key}"
 
 
 def export_space(config: Config, space_url_or_key: str) -> None:

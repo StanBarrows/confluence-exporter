@@ -7,6 +7,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
+from urllib.parse import unquote
 
 from .confluence import ConfluenceClient
 from .config import Config
@@ -24,16 +25,21 @@ _LOSSY_MARKERS = (
 
 
 def reconcile(client: ConfluenceClient, config: Config) -> Dict[str, object]:
-    """Compare source counts (via CQL) with what landed in the vault."""
+    """Compare source counts (via CQL) with what landed in the vault.
+
+    Counts are restricted to the in-scope spaces so the comparison is fair
+    (otherwise personal/archived spaces excluded by config inflate the source).
+    """
     vault = config.output_path
+    scope_rows = client.spaces_in_scope(config.settings)
+    keys = [r["key"] for r in scope_rows]
 
     source = {
-        "spaces_current": len(client.get_spaces("current")),
-        "spaces_archived": len(client.get_spaces("archived")),
-        "pages": client.count("type=page"),
-        "blogposts": client.count("type=blogpost"),
-        "comments": client.count("type=comment"),
-        "attachments": client.count("type=attachment"),
+        "spaces_in_scope": len(keys),
+        "pages": client.count_in_spaces("page", keys),
+        "blogposts": client.count_in_spaces("blogpost", keys),
+        "comments": client.count_in_spaces("comment", keys),
+        "attachments": client.count_in_spaces("attachment", keys),
     }
 
     md_files = [
@@ -91,7 +97,9 @@ def scan_vault(vault: Path) -> Dict[str, object]:
             path_part = target.split("#", 1)[0]
             if not path_part:
                 continue
-            resolved = (md.parent / path_part).resolve()
+            # cme writes URL-encoded links (e.g. %20 for spaces); decode before
+            # checking the filesystem or we get false-positive "broken" reports.
+            resolved = (md.parent / unquote(path_part)).resolve()
             if resolved.exists():
                 continue
             entry = f"{rel_md} -> {target}"
@@ -144,12 +152,11 @@ def write_report(config: Config, recon: Dict[str, object], extra: str = "") -> P
         "",
         f"_Generated {now}_",
         "",
-        "## Source (Confluence, via CQL)",
+        "## Source (Confluence, in-scope spaces via CQL)",
         "",
         "| Object | Count |",
         "|--------|------:|",
-        f"| Spaces (current) | {source['spaces_current']} |",
-        f"| Spaces (archived) | {source['spaces_archived']} |",
+        f"| Spaces (in scope) | {source['spaces_in_scope']} |",
         f"| Pages | {source['pages']} |",
         f"| Blog posts | {source['blogposts']} |",
         f"| Comments | {source['comments']} |",

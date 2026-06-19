@@ -77,6 +77,25 @@ def test_generate_indexes(tmp_path: Path):
     assert "One" in idx and "Two" in idx
 
 
+def test_generate_indexes_encodes_spaces(tmp_path: Path):
+    space = tmp_path / "Space"
+    space.mkdir()
+    (space / "Marketing And Sales.md").write_text("a", encoding="utf-8")
+    generate_indexes(tmp_path)
+    idx = (space / "_index.md").read_text(encoding="utf-8")
+    # link target must be URL-encoded so the space doesn't break the markdown link
+    assert "Marketing%20And%20Sales.md" in idx
+
+
+def test_scan_vault_decodes_encoded_links(tmp_path: Path):
+    (tmp_path / "Real Page.md").write_text("ok", encoding="utf-8")
+    src = tmp_path / "src.md"
+    src.write_text("[x](Real%20Page.md)\n", encoding="utf-8")
+    qa = scan_vault(tmp_path)
+    # encoded link to an existing file must NOT be reported broken
+    assert not any("Real%20Page.md" in b for b in qa["broken_links"])
+
+
 def test_scan_vault_finds_broken_and_lossy(tmp_path: Path):
     md = tmp_path / "p.md"
     md.write_text(

@@ -45,11 +45,20 @@ def parse_frontmatter(text: str) -> Dict[str, str]:
 
 
 def _page_id_from(fields: Dict[str, str]) -> str:
-    pid = fields.get("source_id") or fields.get("id") or ""
+    # cme emits a direct page id (most reliable; homepages have no /pages/<id> URL).
+    pid = (
+        fields.get("confluence_page_id")
+        or fields.get("source_id")
+        or fields.get("id")
+        or ""
+    )
     if pid:
         return str(pid).strip()
-    match = _PAGE_ID_IN_URL.search(fields.get("source", "") or fields.get("url", ""))
-    return match.group(1) if match else ""
+    for key in ("source", "url", "confluence_webui_url", "confluence_url"):
+        match = _PAGE_ID_IN_URL.search(fields.get(key, "") or "")
+        if match:
+            return match.group(1)
+    return ""
 
 
 def decode_tiny_link(token: str) -> str:

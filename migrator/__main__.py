@@ -147,13 +147,20 @@ def cmd_spaces(config: Config, args) -> int:
 
 
 def cmd_export(config: Config, args) -> int:
-    from .exporter import export_org, export_space
+    from .exporter import export_space, export_spaces, space_url
 
     config.require_credentials()
     if args.space:
         export_space(config, args.space)
     else:
-        export_org(config)
+        # Drive cme from OUR in-scope space list (cme's `orgs` ignores config
+        # scope and only sees a subset), so collaboration/KB spaces are included
+        # and personal/archived stay excluded per config.yml.
+        client = _client(config)
+        rows = client.spaces_in_scope(config.settings)
+        urls = [space_url(config, r["key"]) for r in rows]
+        log.info("exporting %d in-scope space(s)", len(urls))
+        export_spaces(config, urls)
     return 0
 
 

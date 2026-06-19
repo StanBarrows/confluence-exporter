@@ -122,7 +122,11 @@ def process_diagrams(
         space_dir = safe_join(config.output_path, safe_name(space))
         diagrams_dir = space_dir / "diagrams"
         base = safe_name(strip_ext(title))
-        mxfile_path = safe_join(diagrams_dir, f"{base}.drawio")
+        # Namespace the file by a stable attachment id so duplicate diagram
+        # titles (common across pages) don't overwrite each other on disk.
+        att_id = att.get("attachment_id") or att.get("file_id") or ""
+        file_base = safe_name(f"{strip_ext(title)}-{att_id}") if att_id else base
+        mxfile_path = safe_join(diagrams_dir, f"{file_base}.drawio")
         try:
             try:
                 expected = int(att.get("file_size") or 0)
@@ -134,7 +138,7 @@ def process_diagrams(
                     stats["kept_mxfile_only"] += 1
                 return
 
-            out_path = safe_join(diagrams_dir, f"{base}{out_ext}")
+            out_path = safe_join(diagrams_dir, f"{file_base}{out_ext}")
             hash_path = mxfile_path.with_suffix(mxfile_path.suffix + ".sha256")
             src_hash = file_sha256(mxfile_path)
 

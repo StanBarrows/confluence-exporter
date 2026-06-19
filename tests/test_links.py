@@ -20,6 +20,30 @@ def test_parse_frontmatter_none():
     assert parse_frontmatter("no frontmatter here") == {}
 
 
+def test_page_index_from_confluence_webui_url(tmp_path):
+    # cme leaves source_id empty and puts the URL in confluence_webui_url.
+    md = tmp_path / "p.md"
+    md.write_text(
+        "---\nsource_id: ''\n"
+        "confluence_webui_url: https://x.atlassian.net/wiki/spaces/S/pages/230519/Title\n"
+        "---\nbody\n",
+        encoding="utf-8",
+    )
+    index = build_page_index(tmp_path)
+    assert "230519" in index
+
+
+def test_page_index_from_confluence_page_id(tmp_path):
+    md = tmp_path / "home.md"
+    md.write_text(
+        "---\nconfluence_page_id: '34248'\n"
+        "confluence_webui_url: https://x.atlassian.net/wiki/spaces/M/overview\n"
+        "---\nbody\n",
+        encoding="utf-8",
+    )
+    assert "34248" in build_page_index(tmp_path)
+
+
 def test_decode_tiny_link_roundtrip():
     import base64
 

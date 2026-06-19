@@ -10,6 +10,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Dict
+from urllib.parse import quote
 
 log = logging.getLogger("migrator.index")
 
@@ -51,14 +52,14 @@ def generate_indexes(vault: Path, dry_run: bool = False) -> Dict[str, int]:
             for d in subdirs:
                 child_index = d / _INDEX_NAME
                 target = child_index if child_index.exists() else d
-                rel = os.path.relpath(target, current)
+                rel = quote(os.path.relpath(target, current))
                 lines.append(f"- [{d.name}]({rel})")
             lines.append("")
         if pages:
             lines.append("## Pages")
             lines.append("")
             for p in pages:
-                rel = os.path.relpath(p, current)
+                rel = quote(os.path.relpath(p, current))
                 lines.append(f"- [{p.stem}]({rel})")
             lines.append("")
 
