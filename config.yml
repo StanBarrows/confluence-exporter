@@ -23,8 +23,8 @@ scope:
     include_archived: false
     include_personal: false
   pages:
-    include_blogposts: true
-    include_comments: true
+    include_blogposts: false
+    include_comments: false
 
 attachments:
   download: referenced
@@ -36,6 +36,9 @@ attachments:
   max_file_size_mb: 0
   skip_temp_artifacts: true
   filename: "{file_id}{ext}"
+
+jira:
+  enabled: false
 
 diagrams:
   enabled: true

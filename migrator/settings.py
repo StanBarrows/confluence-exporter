@@ -78,6 +78,11 @@ class AttachmentSettings:
 
 
 @dataclass
+class JiraSettings:
+    enabled: bool = False
+
+
+@dataclass
 class DiagramSettings:
     enabled: bool = True
     source_media_type: str = "application/vnd.jgraph.mxfile"
@@ -143,6 +148,7 @@ class Settings:
     scope: ScopeSettings = field(default_factory=ScopeSettings)
     attachments: AttachmentSettings = field(default_factory=AttachmentSettings)
     diagrams: DiagramSettings = field(default_factory=DiagramSettings)
+    jira: JiraSettings = field(default_factory=JiraSettings)
     markdown: MarkdownSettings = field(default_factory=MarkdownSettings)
     git: GitSettings = field(default_factory=GitSettings)
     anonymize: AnonymizeSettings = field(default_factory=AnonymizeSettings)
@@ -301,11 +307,15 @@ class Settings:
             incremental=bool(_get(data, "runtime.incremental", True)),
             max_workers=max(1, int(_get(data, "runtime.max_workers", 4) or 4)),
         )
+        jira = JiraSettings(
+            enabled=bool(_get(data, "jira.enabled", False)),
+        )
         return cls(
             export=export,
             scope=scope,
             attachments=attachments,
             diagrams=diagrams,
+            jira=jira,
             markdown=markdown,
             git=git,
             anonymize=anonymize,

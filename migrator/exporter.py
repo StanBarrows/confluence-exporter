@@ -123,6 +123,8 @@ def _env_for_cme(config: Config) -> dict:
     for key, value in _export_overrides(config).items():
         env[f"CME_EXPORT__{key.upper()}"] = _env_value(value)
     env["CME_CONNECTION_CONFIG__MAX_WORKERS"] = str(config.max_workers)
+    if not config.settings.jira.enabled:
+        env["CME_EXPORT__ENABLE_JIRA_ENRICHMENT"] = "false"
     return env
 
 
@@ -154,10 +156,14 @@ def _ensure_auth_in_store(config: Config) -> None:
         data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     except (OSError, json.JSONDecodeError):
         data = {}
-    auth = data.setdefault("auth", {}).setdefault("confluence", {})
-    entry = auth.setdefault(config.site_root, {})
-    entry["username"] = config.username
-    entry["api_token"] = config.api_token
+    all_auth = data.setdefault("auth", {})
+    services = ["confluence"]
+    if config.settings.jira.enabled:
+        services.append("jira")
+    for service in services:
+        entry = all_auth.setdefault(service, {}).setdefault(config.site_root, {})
+        entry["username"] = config.username
+        entry["api_token"] = config.api_token
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     log.info("updated cme credentials for %s (stored in %s)", config.site_root, path)
