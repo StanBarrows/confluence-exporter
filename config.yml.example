@@ -1,0 +1,87 @@
+# =============================================================================
+# config.yml - export structure & policy for the Confluence migrator
+#
+# This file contains NO secrets. Credentials/connection live in .env:
+#   CONFLUENCE_URL, CONFLUENCE_USERNAME, CONFLUENCE_API_TOKEN
+#
+# Copy to `config.yml` and adjust. Both files are safe to commit.
+# =============================================================================
+
+export:
+  root: export                      # base dir inside this repo; runs go in export/<run_id>/
+  run_id_format: "%Y%m%d-%H%M%S"    # strftime pattern -> the {DATETIME} run folder name
+  keep_latest_symlink: true         # maintain export/latest -> newest run
+
+  layout:
+    group_by: space                 # space | flat | space_type
+    space_folder: "{space_name}"    # folder name per space; or "{space_key}"
+    mirror_hierarchy: true          # nest child pages as folders
+    page_path: "{space}/{ancestors}/{title}.md"
+    assets_dir: "{space}/assets"    # where non-diagram attachments go
+    diagrams_dir: "{space}/diagrams"
+    meta_dir: _meta                 # inventory.csv, pageid_map.csv (relative to run dir)
+    index_files: true               # generate _index.md folder notes for navigation
+
+scope:
+  spaces:
+    include: []                     # list of space keys; empty = all visible spaces
+    exclude: []                     # space keys to skip
+    types: [global, personal, collaboration, knowledge_base]
+    include_archived: true
+    include_personal: true
+  pages:
+    include_blogposts: true
+    include_comments: true          # exported as sidecar markdown files
+
+attachments:
+  download: referenced              # all | referenced | none
+  allow_extensions:                 # only these are kept (empty = allow all not denied)
+    [png, jpg, jpeg, gif, svg, webp, pdf, docx, xlsx, pptx, csv, txt, zip, mp4, mov, drawio]
+  deny_extensions: [exe, dll, bin, app, msi, sh]
+  allow_media_types: []             # optional MIME allowlist (empty = allow all not denied)
+  deny_media_types: []              # optional MIME denylist
+  max_file_size_mb: 100             # skip files larger than this; 0 = unlimited
+  skip_temp_artifacts: true         # ignore *.tmp and ~drawio~* autosave files
+  filename: "{file_id}{ext}"        # naming template; or "{title}"
+
+diagrams:
+  enabled: true
+  source_media_type: application/vnd.jgraph.mxfile
+  output_format: drawio_svg         # drawio_svg | drawio_png | keep_mxfile
+  embed_xml: true                   # produce editable .drawio.svg (XML embedded)
+  keep_mxfile: true                 # keep the raw .drawio source alongside the svg
+
+markdown:
+  frontmatter:
+    enabled: true
+    fields: [title, date, updated, tags, type, source, source_id, status]
+    confluence_url: true            # include source URL in frontmatter
+  callouts: true                    # info/note/warning panels -> [!NOTE]/[!WARNING]
+  page_properties_report: snapshot  # snapshot | dataview | both
+  includes: transclusion            # include/excerpt macros: transclusion | inline
+  links:
+    rewrite_internal: true
+    style: relative                 # relative | wikilink
+    rewrite_anchors: true
+
+git:
+  init: true                        # git init inside each run dir
+  lfs: true
+  lfs_extensions: [png, jpg, jpeg, gif, pdf, zip, mp4, mov, docx, xlsx, pptx]
+  obsidian_config: true             # write .obsidian/app.json into the run
+  commit: true                      # create an initial commit after scaffolding
+  commit_message: "Initial Confluence migration import"
+
+anonymize:
+  enabled: false                    # off by default; only for shared/public mirrors
+  redact_emails: true               # replace emails with a placeholder
+  pseudonymize_authors: false       # stable pseudonyms instead of "redacted"
+  author_fields: [author, creator, updated_by]   # frontmatter fields to scrub
+  redact_patterns: []               # extra regexes -> [REDACTED]
+
+runtime:
+  drawio_bin: ""                    # path to draw.io binary; blank = auto-detect
+  http_timeout: 30                  # seconds per request
+  max_retries: 5                    # retries on 429/5xx with backoff
+  incremental: true                 # reuse the latest run dir so re-runs converge
+  max_workers: 4                    # parallel attachment downloads / diagram conversions

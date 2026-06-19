@@ -1,0 +1,25 @@
+# --- Secrets ---------------------------------------------------------------
+.env
+*.local.env
+!.env.example
+
+# --- Export output (timestamped runs live here; pushed to their own repo) ---
+/export/
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# --- draw.io / Confluence temp artifacts -----------------------------------
+*.tmp
+~drawio~*
+
+# --- OS / editor -----------------------------------------------------------
+.DS_Store
+Thumbs.db

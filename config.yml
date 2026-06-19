@@ -1,0 +1,80 @@
+# Confluence migrator - export structure & policy (NO secrets; see .env).
+# Edit freely. See config.yml.example for documentation of every option.
+
+export:
+  root: export
+  run_id_format: "%Y%m%d-%H%M%S"
+  keep_latest_symlink: true
+  layout:
+    group_by: space
+    space_folder: "{space_name}"
+    mirror_hierarchy: true
+    page_path: "{space}/{ancestors}/{title}.md"
+    assets_dir: "{space}/assets"
+    diagrams_dir: "{space}/diagrams"
+    meta_dir: _meta
+    index_files: true
+
+scope:
+  spaces:
+    include: []
+    exclude: []
+    types: [global, personal, collaboration, knowledge_base]
+    include_archived: false
+    include_personal: false
+  pages:
+    include_blogposts: true
+    include_comments: true
+
+attachments:
+  download: referenced
+  allow_extensions:
+    [png, jpg, jpeg, gif, svg, webp, pdf, docx, xlsx, pptx, csv, txt, zip, mp4, mov, drawio]
+  deny_extensions: [exe, dll, bin, app, msi, sh]
+  allow_media_types: []
+  deny_media_types: []
+  max_file_size_mb: 0
+  skip_temp_artifacts: true
+  filename: "{file_id}{ext}"
+
+diagrams:
+  enabled: true
+  source_media_type: application/vnd.jgraph.mxfile
+  output_format: drawio_svg
+  embed_xml: true
+  keep_mxfile: true
+
+markdown:
+  frontmatter:
+    enabled: true
+    fields: [title, date, updated, tags, type, source, source_id, status]
+    confluence_url: true
+  callouts: true
+  page_properties_report: snapshot
+  includes: transclusion
+  links:
+    rewrite_internal: true
+    style: relative
+    rewrite_anchors: true
+
+git:
+  init: true
+  lfs: true
+  lfs_extensions: [png, jpg, jpeg, gif, pdf, zip, mp4, mov, docx, xlsx, pptx]
+  obsidian_config: true
+  commit: true
+  commit_message: "Initial Confluence migration import"
+
+anonymize:
+  enabled: false
+  redact_emails: true
+  pseudonymize_authors: false
+  author_fields: [author, creator, updated_by]
+  redact_patterns: []
+
+runtime:
+  drawio_bin: ""
+  http_timeout: 30
+  max_retries: 5
+  incremental: true
+  max_workers: 4

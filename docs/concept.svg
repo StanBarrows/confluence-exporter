@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1280" height="720" fill="#f8fafc"/>
+
+  <!-- title -->
+  <text x="640" y="44" text-anchor="middle" font-size="30" font-weight="700" fill="#0f172a">Confluence &#8594; Markdown Knowledge Base</text>
+  <text x="640" y="72" text-anchor="middle" font-size="16" fill="#475569">Git-backed Markdown vault &#183; Obsidian &#183; local draw.io &#183; no vendor lock-in</text>
+
+  <!-- ===== SOURCE ===== -->
+  <rect x="140" y="100" width="1000" height="86" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="160" y="126" font-size="15" font-weight="700" fill="#1e3a8a">CONFLUENCE CLOUD</text>
+
+  <g font-size="13" fill="#1e40af">
+    <rect x="160" y="143" width="86"  height="30" rx="15" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="203" y="163" text-anchor="middle">Spaces</text>
+    <rect x="258" y="143" width="158" height="30" rx="15" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="337" y="163" text-anchor="middle">Pages + hierarchy</text>
+    <rect x="428" y="143" width="106" height="30" rx="15" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="481" y="163" text-anchor="middle">Comments</text>
+    <rect x="546" y="143" width="176" height="30" rx="15" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="634" y="163" text-anchor="middle">Labels &amp; properties</text>
+    <rect x="734" y="143" width="124" height="30" rx="15" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="796" y="163" text-anchor="middle">Attachments</text>
+    <rect x="870" y="143" width="160" height="30" rx="15" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="950" y="163" text-anchor="middle">draw.io diagrams</text>
+  </g>
+
+  <!-- source -> pipeline -->
+  <line x1="640" y1="186" x2="640" y2="214" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="655" y="206" font-size="12" fill="#64748b">Atlassian API &#183; use storage/ADF body (not lossy markdown)</text>
+
+  <!-- ===== PIPELINE ===== -->
+  <rect x="100" y="216" width="1080" height="184" rx="12" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="120" y="242" font-size="15" font-weight="700" fill="#3730a3">MIGRATION PIPELINE</text>
+
+  <!-- stage boxes -->
+  <g font-size="14" fill="#312e81" text-anchor="middle">
+    <!-- 1 -->
+    <rect x="130" y="266" width="180" height="98" rx="10" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="220" y="304" font-weight="700">Extract</text>
+    <text x="220" y="326" font-size="12.5" fill="#475569">storage &#183; ADF</text>
+    <text x="220" y="344" font-size="12.5" fill="#475569">all spaces</text>
+    <!-- 2 -->
+    <rect x="340" y="266" width="180" height="98" rx="10" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="430" y="304" font-weight="700">Convert</text>
+    <text x="430" y="326" font-size="12.5" fill="#475569">Markdown +</text>
+    <text x="430" y="344" font-size="12.5" fill="#475569">frontmatter</text>
+    <!-- 3 -->
+    <rect x="550" y="266" width="180" height="98" rx="10" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="640" y="304" font-weight="700">Assets</text>
+    <text x="640" y="326" font-size="12.5" fill="#475569">images &#183; PDF</text>
+    <text x="640" y="344" font-size="12.5" fill="#475569">Office &#183; media</text>
+    <!-- 4 (highlight) -->
+    <rect x="760" y="266" width="180" height="98" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8" filter="url(#shadow)"/>
+    <text x="850" y="304" font-weight="700" fill="#14532d">Diagrams</text>
+    <text x="850" y="326" font-size="12.5" fill="#166534">mxfile &#8594;</text>
+    <text x="850" y="344" font-size="12.5" fill="#166534">.drawio.svg</text>
+    <!-- 5 -->
+    <rect x="970" y="266" width="180" height="98" rx="10" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
+    <text x="1060" y="304" font-weight="700">Link rewrite</text>
+    <text x="1060" y="326" font-size="12.5" fill="#475569">&amp; assemble</text>
+    <text x="1060" y="344" font-size="12.5" fill="#475569">vault</text>
+  </g>
+
+  <!-- stage arrows -->
+  <g stroke="#475569" stroke-width="2">
+    <line x1="310" y1="315" x2="338" y2="315" marker-end="url(#arrow)"/>
+    <line x1="520" y1="315" x2="548" y2="315" marker-end="url(#arrow)"/>
+    <line x1="730" y1="315" x2="758" y2="315" marker-end="url(#arrow)"/>
+    <line x1="940" y1="315" x2="968" y2="315" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- pipeline -> target -->
+  <line x1="640" y1="400" x2="640" y2="428" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ===== TARGET ===== -->
+  <rect x="140" y="430" width="1000" height="142" rx="12" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="160" y="456" font-size="15" font-weight="700" fill="#0f766e">GIT REPO  =  OBSIDIAN VAULT</text>
+
+  <!-- left: layout -->
+  <rect x="160" y="466" width="478" height="92" rx="8" fill="#ffffff" stroke="#5eead4"/>
+  <text x="176" y="486" font-size="12.5" font-weight="700" fill="#0f766e">Vault layout (folder per space)</text>
+  <g font-size="12.5" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <text x="176" y="506">&#60;Space&#62;/Page.md</text>
+    <text x="176" y="524">&#60;Space&#62;/assets/&#60;fileId&#62;.ext</text>
+    <text x="176" y="542">&#60;Space&#62;/diagrams/*.drawio.svg</text>
+  </g>
+
+  <!-- right: capabilities -->
+  <rect x="660" y="466" width="460" height="92" rx="8" fill="#ffffff" stroke="#5eead4"/>
+  <text x="676" y="486" font-size="12.5" font-weight="700" fill="#0f766e">Capabilities</text>
+  <g font-size="12.5" fill="#0f172a">
+    <text x="676" y="506">&#9679; Git LFS for binaries &#183; full history &amp; review</text>
+    <text x="676" y="524">&#9679; _index.md &#183; migration_report.md</text>
+    <text x="676" y="542">&#9679; optional MCP / AI search layer</text>
+  </g>
+
+  <!-- target <-> author (read/write loop) -->
+  <line x1="640" y1="572" x2="640" y2="604" stroke="#475569" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="655" y="594" font-size="12" fill="#64748b">edit / commit</text>
+
+  <!-- author -->
+  <rect x="430" y="606" width="420" height="40" rx="20" fill="#1e293b"/>
+  <text x="640" y="631" text-anchor="middle" font-size="14" font-weight="600" fill="#ffffff">Author edits locally &#183; Obsidian + draw.io desktop</text>
+
+  <!-- principles strip -->
+  <g font-size="12.5" fill="#334155" text-anchor="middle">
+    <rect x="150"  y="668" width="160" height="30" rx="15" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="230"  y="688">Lossless-as-possible</text>
+    <rect x="326"  y="668" width="120" height="30" rx="15" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="386"  y="688">Idempotent</text>
+    <rect x="462"  y="668" width="160" height="30" rx="15" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="542"  y="688">Automation-first</text>
+    <rect x="638"  y="668" width="140" height="30" rx="15" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="708"  y="688">Secrets-safe</text>
+    <rect x="794"  y="668" width="180" height="30" rx="15" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="884"  y="688">Incremental cutover</text>
+    <rect x="990"  y="668" width="140" height="30" rx="15" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="1060" y="688">Portable</text>
+  </g>
+</svg>
