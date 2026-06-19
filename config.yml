@@ -65,6 +65,24 @@ git:
   lfs: true
   lfs_extensions: [png, jpg, jpeg, gif, pdf, zip, mp4, mov, docx, xlsx, pptx]
   obsidian_config: true
+  obsidian_metadata:
+    enabled: true
+    types_file: true
+    templates: true
+    template_dir: Templates
+    fields:
+      title: text
+      date: date
+      updated: date
+      tags: tags
+      type: text
+      source: text
+      source_id: text
+      status: text
+      confluence_webui_url: text
+    defaults:
+      type: confluence-page
+      status: migrated
   commit: true
   commit_message: "Initial Confluence migration import"
 

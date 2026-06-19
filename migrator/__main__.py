@@ -43,6 +43,7 @@ INCREMENTAL_COMMANDS = {"export", "inventory", "all"}
 CONSUMER_COMMANDS = {
     "diagrams", "links", "normalize", "index", "anonymize", "scaffold", "report",
 }
+NO_RUN_DIR_COMMANDS = {"spaces", "preflight-report", "export-dashboard"}
 
 _LINK_TARGET = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)")
 
@@ -321,7 +322,76 @@ def cmd_report(config: Config, args) -> int:
     recon = reconcile(client, config)
     out = write_report(config, recon)
     log.info("Report -> %s", out)
+    html_out = config.output_path / "migration_report.html"
+    if html_out.exists():
+        log.info("HTML report -> %s", html_out)
     log.info("%s", recon)
+    return 0
+
+
+def _manifest_outputs(config: Config, command: str) -> dict:
+    """Best-effort output paths for the run manifest."""
+    candidates = {
+        "preflight": [
+            config.output_path / "preflight_report.md",
+            config.output_path / "preflight_report.html",
+            config.meta_dir / "preflight.json",
+        ],
+        "export": [config.meta_dir / "cme_config.json"],
+        "inventory": [config.meta_dir / "attachments_inventory.csv"],
+        "diagrams": [config.meta_dir / "diagrams_map.csv"],
+        "links": [config.meta_dir / "pageid_map.csv"],
+        "report": [
+            config.output_path / "migration_report.md",
+            config.output_path / "migration_report.html",
+        ],
+    }.get(command, [])
+    outputs = {}
+    for path in candidates:
+        if path.exists():
+            outputs[path.name] = str(path)
+    return outputs
+
+
+def _run_manifest_step(config: Config, command: str, fn, args) -> int:
+    from .manifest import finish_step, start_step
+
+    start_step(config, command, command=command)
+    try:
+        result = fn(config, args)
+    except Exception as exc:
+        finish_step(config, command, status="failed", error=str(exc))
+        raise
+    exit_code = result if isinstance(result, int) else 0
+    status = "completed" if exit_code == 0 else "failed"
+    details = {"exit_code": exit_code}
+    if isinstance(result, dict):
+        details.update(result)
+    finish_step(
+        config,
+        command,
+        status=status,
+        details=details,
+        outputs=_manifest_outputs(config, command),
+    )
+    return exit_code
+
+
+def cmd_export_dashboard(config: Config, args) -> int:
+    """Render the export visualizer across all runs."""
+    from .export_html import collect_export_runs, render_export_dashboard
+
+    runs = collect_export_runs(config.export_root)
+    out = config.export_root / "export-dashboard.html"
+    if config.dry_run:
+        log.info("[dry-run] would write export dashboard -> %s", out)
+        return 0
+    config.export_root.mkdir(parents=True, exist_ok=True)
+    out.write_text(render_export_dashboard(runs), encoding="utf-8")
+    log.info("Export dashboard (%d run(s)) -> %s", len(runs), out)
+    if getattr(args, "open", False):
+        import webbrowser
+        webbrowser.open(out.resolve().as_uri())
     return 0
 
 
@@ -339,7 +409,9 @@ def cmd_all(config: Config, args) -> int:
     )
     for name, fn in steps:
         log.info("== %s ==", name)
-        fn(config, args)
+        code = _run_manifest_step(config, name, fn, args)
+        if code != 0:
+            return code
     return 0
 
 
@@ -365,6 +437,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_pf_report = sub.add_parser("preflight-report", help="Render HTML visualizer for all preflight runs (no network)")
     p_pf_report.add_argument("--open", action="store_true", help="Open the dashboard in a browser")
+
+    p_export_report = sub.add_parser("export-dashboard", help="Render HTML export visualizer for all runs (no network)")
+    p_export_report.add_argument("--open", action="store_true", help="Open the dashboard in a browser")
 
     sub.add_parser("spaces", help="List in-scope spaces (current + archived)")
 
@@ -394,6 +469,7 @@ def build_parser() -> argparse.ArgumentParser:
 _DISPATCH = {
     "preflight": cmd_preflight,
     "preflight-report": cmd_preflight_report,
+    "export-dashboard": cmd_export_dashboard,
     "spaces": cmd_spaces,
     "export": cmd_export,
     "inventory": cmd_inventory,
@@ -435,15 +511,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         if run_id and run_id != config.run_id:
             config = Config.load(args.env, args.config, run_id=run_id, dry_run=args.dry_run)
 
-        no_run_dir = {"spaces", "preflight-report"}
-        if args.command not in no_run_dir and not config.dry_run:
+        if args.command not in NO_RUN_DIR_COMMANDS and not config.dry_run:
             config.run_dir.mkdir(parents=True, exist_ok=True)
             config.meta_dir.mkdir(parents=True, exist_ok=True)
             if args.command in PRODUCER_COMMANDS:
                 config.update_latest_symlink()
-        if args.command not in no_run_dir:
+        if args.command not in NO_RUN_DIR_COMMANDS:
             log.info("Run directory: %s", config.run_dir)
 
+        if args.command not in NO_RUN_DIR_COMMANDS and args.command != "all":
+            return _run_manifest_step(config, args.command, _DISPATCH[args.command], args)
         return _DISPATCH[args.command](config, args)
     except (ConfigError, SettingsError) as exc:
         log.error("Error: %s", exc)

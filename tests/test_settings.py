@@ -48,3 +48,22 @@ def test_space_in_scope_archived_personal_toggles():
     assert not s.space_in_scope("X", "global", "archived")
     assert not s.space_in_scope("Y", "personal", "current")
     assert s.space_in_scope("Z", "global", "current")
+
+
+def test_load_obsidian_metadata_settings(tmp_path):
+    cfg = tmp_path / "config.yml"
+    cfg.write_text(
+        "git:\n"
+        "  obsidian_metadata:\n"
+        "    enabled: true\n"
+        "    template_dir: Notes/Templates\n"
+        "    fields:\n"
+        "      status: text\n"
+        "    defaults:\n"
+        "      status: reviewed\n",
+        encoding="utf-8",
+    )
+    settings = Settings.load(str(cfg))
+    assert settings.git.obsidian_metadata.template_dir == "Notes/Templates"
+    assert settings.git.obsidian_metadata.fields == {"status": "text"}
+    assert settings.git.obsidian_metadata.defaults == {"status": "reviewed"}

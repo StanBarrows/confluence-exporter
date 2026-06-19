@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import html
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
@@ -22,6 +23,46 @@ _LOSSY_MARKERS = (
     re.compile(r"<ri:[a-z-]+", re.IGNORECASE),
     re.compile(r"<!--\s*(unsupported|unknown|macro)", re.IGNORECASE),
 )
+
+_HTML_CSS = """
+:root {
+  --bg: #f6f7f9; --card: #fff; --text: #1c1e21; --muted: #6b7280;
+  --border: #e4e7eb; --accent: #0969da; --ok: #1a7f37; --warn: #b7791f;
+  --fail: #cf222e; --info-bg: #eef1f4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --card: #161b22; --text: #e6edf3; --muted: #8b949e;
+    --border: #30363d; --accent: #58a6ff; --ok: #3fb950; --warn: #d29922;
+    --fail: #f85149; --info-bg: #1c2128;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.wrap { max-width: 1060px; margin: 0 auto; padding: 32px 20px 64px; }
+h1 { font-size: 24px; margin: 0 0 4px; }
+h2 { font-size: 17px; margin: 28px 0 12px; }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.metric { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.metric b { display: block; font-size: 24px; }
+.metric span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .35px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+th, td { text-align: left; padding: 10px 12px; border-top: 1px solid var(--border); }
+th { border-top: 0; background: var(--info-bg); color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .35px; }
+.ok { color: var(--ok); }
+.warn { color: var(--warn); }
+.fail { color: var(--fail); }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+ul { margin: 8px 0 0; padding-left: 20px; }
+footer { color: var(--muted); font-size: 12px; margin-top: 32px; }
+"""
+
+
+def _esc(value: object) -> str:
+    return html.escape(str(value if value is not None else ""))
 
 
 def reconcile(client: ConfluenceClient, config: Config) -> Dict[str, object]:
@@ -141,6 +182,77 @@ def _qa_section(qa: Dict[str, object], limit: int = 25) -> List[str]:
     return lines
 
 
+def render_report_html(recon: Dict[str, object], generated: str, extra: str = "") -> str:
+    """Render a rich self-contained HTML version of the migration report."""
+    source = recon["source"]
+    vault = recon["vault"]
+    qa = recon.get("qa", {"broken_links": [], "missing_assets": [], "lossy_macros": []})
+    total_qa = sum(len(qa.get(key, [])) for key in ("broken_links", "missing_assets", "lossy_macros"))
+    health_class = "ok" if total_qa == 0 else "warn"
+    parts: List[str] = [
+        "<h1>Migration report</h1>",
+        f"<div class=\"meta\">Generated {_esc(generated)}</div>",
+        "<div class=\"grid\">",
+    ]
+    for label, value in (
+        ("Source spaces", source["spaces_in_scope"]),
+        ("Source pages", source["pages"]),
+        ("Source blog posts", source["blogposts"]),
+        ("Source comments", source["comments"]),
+        ("Source attachments", source["attachments"]),
+        ("Markdown pages", vault["markdown_files"]),
+        ("Asset files", vault["asset_files"]),
+        ("Diagram SVGs", vault["diagram_svgs"]),
+    ):
+        parts.append(f"<div class=\"metric\"><b>{_esc(value)}</b><span>{_esc(label)}</span></div>")
+    parts.append("</div>")
+
+    parts.append("<h2>QA Summary</h2>")
+    parts.append(
+        f"<div class=\"card\"><p class=\"{health_class}\"><b>{total_qa}</b> total QA finding(s).</p>"
+        "<table><tr><th>Check</th><th>Count</th></tr>"
+    )
+    for label, key in (
+        ("Broken internal links", "broken_links"),
+        ("Missing assets", "missing_assets"),
+        ("Pages with lossy-macro leftovers", "lossy_macros"),
+    ):
+        parts.append(f"<tr><td>{_esc(label)}</td><td>{len(qa.get(key, []))}</td></tr>")
+    parts.append("</table></div>")
+
+    for label, key in (
+        ("Broken internal links", "broken_links"),
+        ("Missing assets", "missing_assets"),
+        ("Pages with lossy-macro leftovers", "lossy_macros"),
+    ):
+        items = list(qa.get(key, []))
+        if not items:
+            continue
+        parts.append(f"<h2>{_esc(label)}</h2><div class=\"card\"><ul>")
+        for item in items[:100]:
+            parts.append(f"<li><code>{_esc(item)}</code></li>")
+        if len(items) > 100:
+            parts.append(f"<li>... and {len(items) - 100} more</li>")
+        parts.append("</ul></div>")
+
+    parts.append(
+        "<h2>Notes</h2><div class=\"card\"><ul>"
+        "<li>Investigate page or attachment shortfalls; under-scoped tokens commonly skip restricted or archived content.</li>"
+        "<li>Diagram SVG count reflects converted draw.io sources; temporary artifacts are skipped by design.</li>"
+        "<li>Lossy macro leftovers require manual review.</li>"
+        "</ul></div>"
+    )
+    if extra:
+        parts.append(f"<div class=\"card\"><pre>{_esc(extra)}</pre></div>")
+    parts.append("<footer>Generated by the Confluence migrator report renderer.</footer>")
+    return (
+        "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+        f"<title>Migration report</title><style>{_HTML_CSS}</style></head>"
+        f"<body><div class=\"wrap\">{''.join(parts)}</div></body></html>\n"
+    )
+
+
 def write_report(config: Config, recon: Dict[str, object], extra: str = "") -> Path:
     source = recon["source"]
     vault = recon["vault"]
@@ -192,4 +304,6 @@ def write_report(config: Config, recon: Dict[str, object], extra: str = "") -> P
         log.info("[dry-run] would write report -> %s", out)
         return out
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    html_out = config.output_path / "migration_report.html"
+    html_out.write_text(render_report_html(recon, now, extra=extra), encoding="utf-8")
     return out

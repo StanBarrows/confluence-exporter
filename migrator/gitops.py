@@ -5,6 +5,7 @@ come from config.yml `git:`. Pushing to a remote is always left to the user.
 """
 from __future__ import annotations
 
+import json
 import logging
 import shutil
 import subprocess
@@ -31,6 +32,32 @@ OBSIDIAN_APP_JSON = """\
   "attachmentFolderPath": "./assets"
 }
 """
+
+
+def _obsidian_types_json(fields: dict) -> str:
+    """Obsidian Properties type presets for migrated Confluence frontmatter."""
+    payload = {
+        "types": {
+            "aliases": "aliases",
+            "cssclasses": "multitext",
+            "tags": "tags",
+        },
+        "properties": fields,
+    }
+    return json.dumps(payload, indent=2, sort_keys=True) + "\n"
+
+
+def _template(defaults: dict, fields: dict) -> str:
+    lines = ["---"]
+    emitted = set()
+    for key, value in defaults.items():
+        lines.append(f"{key}: {value}")
+        emitted.add(key)
+    for key in fields:
+        if key not in emitted:
+            lines.append(f"{key}: ")
+    lines += ["---", "", "# {{title}}", "", "> Imported from Confluence.", ""]
+    return "\n".join(lines)
 
 
 def _gitattributes(lfs_extensions: List[str]) -> str:
@@ -66,6 +93,18 @@ def scaffold_vault(config: Config, do_git: bool = True) -> None:
             obsidian = vault / ".obsidian"
             obsidian.mkdir(exist_ok=True)
             (obsidian / "app.json").write_text(OBSIDIAN_APP_JSON, encoding="utf-8")
+            meta = gcfg.obsidian_metadata
+            if meta.enabled:
+                if meta.types_file:
+                    (obsidian / "types.json").write_text(
+                        _obsidian_types_json(meta.fields), encoding="utf-8"
+                    )
+                if meta.templates:
+                    templates = vault / meta.template_dir
+                    templates.mkdir(parents=True, exist_ok=True)
+                    (templates / "Confluence page.md").write_text(
+                        _template(meta.defaults, meta.fields), encoding="utf-8"
+                    )
     log.info("wrote .gitattributes/.gitignore (+.obsidian) in %s", vault)
 
     if not (do_git and gcfg.init):

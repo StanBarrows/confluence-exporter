@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 class SettingsError(Exception):
@@ -110,6 +110,29 @@ class MarkdownSettings:
 
 
 @dataclass
+class ObsidianMetadataSettings:
+    enabled: bool = True
+    types_file: bool = True
+    templates: bool = True
+    template_dir: str = "Templates"
+    fields: Dict[str, str] = field(default_factory=lambda: {
+        "title": "text",
+        "date": "date",
+        "updated": "date",
+        "tags": "tags",
+        "type": "text",
+        "source": "text",
+        "source_id": "text",
+        "status": "text",
+        "confluence_webui_url": "text",
+    })
+    defaults: Dict[str, str] = field(default_factory=lambda: {
+        "type": "confluence-page",
+        "status": "migrated",
+    })
+
+
+@dataclass
 class GitSettings:
     init: bool = True
     lfs: bool = True
@@ -117,6 +140,7 @@ class GitSettings:
     obsidian_config: bool = True
     commit: bool = True
     commit_message: str = "Initial Confluence migration import"
+    obsidian_metadata: ObsidianMetadataSettings = field(default_factory=ObsidianMetadataSettings)
 
 
 @dataclass
@@ -280,6 +304,28 @@ class Settings:
                 rewrite_anchors=bool(_get(data, "markdown.links.rewrite_anchors", True)),
             ),
         )
+        default_metadata_fields = {
+            "title": "text",
+            "date": "date",
+            "updated": "date",
+            "tags": "tags",
+            "type": "text",
+            "source": "text",
+            "source_id": "text",
+            "status": "text",
+            "confluence_webui_url": "text",
+        }
+        obsidian_metadata = ObsidianMetadataSettings(
+            enabled=bool(_get(data, "git.obsidian_metadata.enabled", True)),
+            types_file=bool(_get(data, "git.obsidian_metadata.types_file", True)),
+            templates=bool(_get(data, "git.obsidian_metadata.templates", True)),
+            template_dir=_get(data, "git.obsidian_metadata.template_dir", "Templates"),
+            fields=dict(_get(data, "git.obsidian_metadata.fields", default_metadata_fields) or {}),
+            defaults=dict(_get(data, "git.obsidian_metadata.defaults", {
+                "type": "confluence-page",
+                "status": "migrated",
+            }) or {}),
+        )
         git = GitSettings(
             init=bool(_get(data, "git.init", True)),
             lfs=bool(_get(data, "git.lfs", True)),
@@ -289,6 +335,7 @@ class Settings:
             commit_message=_get(
                 data, "git.commit_message", "Initial Confluence migration import"
             ),
+            obsidian_metadata=obsidian_metadata,
         )
         anonymize = AnonymizeSettings(
             enabled=bool(_get(data, "anonymize.enabled", False)),

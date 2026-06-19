@@ -69,6 +69,24 @@ git:
   lfs: true
   lfs_extensions: [png, jpg, jpeg, gif, pdf, zip, mp4, mov, docx, xlsx, pptx]
   obsidian_config: true             # write .obsidian/app.json into the run
+  obsidian_metadata:
+    enabled: true                   # write Obsidian Properties presets + templates
+    types_file: true                # write .obsidian/types.json
+    templates: true                 # write a starter template for imported pages
+    template_dir: Templates
+    fields:                         # Obsidian property type hints
+      title: text
+      date: date
+      updated: date
+      tags: tags
+      type: text
+      source: text
+      source_id: text
+      status: text
+      confluence_webui_url: text
+    defaults:
+      type: confluence-page
+      status: migrated
   commit: true                      # create an initial commit after scaffolding
   commit_message: "Initial Confluence migration import"
 

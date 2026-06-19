@@ -84,6 +84,7 @@ account that can read **all** in-scope spaces (admin scope for archived/personal
 | `diagrams` | enable, source media type, output format (`drawio_svg`/`drawio_png`/`keep_mxfile`), embed XML, keep mxfile |
 | `markdown` | frontmatter fields, callouts, page-properties report mode, includes, link style (`relative`/`wikilink`) |
 | `git` | git init, LFS on/off, LFS extensions, Obsidian config, initial commit + message |
+| `git.obsidian_metadata` | Obsidian Properties presets (`types.json`) and imported-page template scaffolding |
 | `anonymize` | enable, redact emails, pseudonymize authors, author fields, extra redact patterns |
 | `runtime` | draw.io binary, HTTP timeout, retries, incremental, parallel workers |
 
@@ -107,6 +108,7 @@ Global flags: `--env <path>` (default `.env`), `--config <path>` (default
 ```bash
 python -m migrator preflight     # read-only gap analysis BEFORE migrating
 python -m migrator preflight-report  # render HTML visualizer for all preflight runs
+python -m migrator export-dashboard  # render HTML dashboard for export runs
 python -m migrator spaces        # list in-scope spaces (current + archived)
 python -m migrator export        # cme org export (config derived from config.yml)
 python -m migrator inventory     # _meta/attachments_inventory.csv (policy + referenced)
@@ -116,7 +118,7 @@ python -m migrator normalize     # normalize frontmatter to the configured schem
 python -m migrator index         # generate _index.md folder notes
 python -m migrator anonymize     # strip/pseudonymize authors + redact (if enabled)
 python -m migrator scaffold      # .gitattributes/.gitignore/.obsidian + git init/commit
-python -m migrator report        # reconcile + QA scans -> migration_report.md
+python -m migrator report        # reconcile + QA scans -> migration_report.md/html
 
 python -m migrator all           # run the whole pipeline end to end
 python -m migrator --run-id 20260619-111200 diagrams   # target a specific run
@@ -165,6 +167,25 @@ python -m migrator preflight-report --open     # also open it in your browser
 The dashboard lists each run with its verdict badge and PASS/WARN/FAIL counts
 and links to the per-run HTML page (graded checklist with the full macro lists).
 
+### Export dashboard & checkpoints
+
+Every run step writes checkpoint state to
+`export/<run_id>/_meta/run_manifest.json`, including step status, timestamps,
+duration, outputs, and failures. This makes interrupted or resumed runs easier
+to inspect.
+
+Render the export visualizer across all runs:
+
+```bash
+python -m migrator export-dashboard
+python -m migrator export-dashboard --open
+```
+
+The dashboard is self-contained HTML at `export/export-dashboard.html`. It shows
+per-run step history, checkpoint events, Markdown/assets/diagram counts,
+inventory/page/diagram map counts, QA findings, and browseable links to generated
+files.
+
 ## Output layout (per run)
 
 ```
@@ -174,8 +195,11 @@ export/<run_id>/
   <Space>/diagrams/<name>.drawio.svg
   _meta/attachments_inventory.csv
   _meta/pageid_map.csv
+  _meta/run_manifest.json
   migration_report.md
+  migration_report.html
   .gitattributes  .gitignore  .obsidian/
+  Templates/Confluence page.md
 export/latest -> <run_id>
 ```
 
@@ -190,5 +214,8 @@ format, and link style are all configurable in `config.yml`.
   VS Code/VSCodium (Foam/Dendron) or Logseq — no lock-in.
 - **Diagrams**: `.drawio.svg` renders as an image *and* reopens in draw.io
   (Desktop or the Obsidian draw.io plugin) for editing.
+- **Reports**: `report` writes both Markdown and rich self-contained HTML.
+- **Obsidian metadata**: scaffold writes `.obsidian/types.json` plus a starter
+  imported-page template when `git.obsidian_metadata.enabled` is true.
 - **Free tools only**: Obsidian is free for commercial use (since 2025); the
   only cost to watch is hosted Git LFS storage quotas — see [docs/plan.md](docs/plan.md).

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from migrator.anonymize import anonymize_text, anonymize_vault
+from migrator.config import Config
 from migrator.diagrams import (
     DiagramResult,
     build_convert_cmd,
@@ -9,8 +10,9 @@ from migrator.diagrams import (
 )
 from migrator.index import generate_indexes
 from migrator.normalize import normalize_file
-from migrator.report import scan_vault
-from migrator.settings import AnonymizeSettings, LinkSettings
+from migrator.gitops import scaffold_vault
+from migrator.report import render_report_html, scan_vault
+from migrator.settings import AnonymizeSettings, LinkSettings, Settings
 
 
 def test_is_temp_artifact():
@@ -124,3 +126,30 @@ def test_rewrite_diagram_refs(tmp_path: Path):
     n = rewrite_diagram_refs(tmp_path, [result], LinkSettings(style="relative"))
     assert n == 1
     assert "Flow.drawio.svg" in page.read_text(encoding="utf-8")
+
+
+def test_render_migration_report_html_escapes():
+    html = render_report_html({
+        "source": {"spaces_in_scope": 1, "pages": 1, "blogposts": 0, "comments": 0, "attachments": 0},
+        "vault": {"markdown_files": 1, "asset_files": 0, "diagram_svgs": 0},
+        "qa": {"broken_links": ["<bad>.md"], "missing_assets": [], "lossy_macros": []},
+    }, "now")
+    assert "<bad>.md" not in html
+    assert "&lt;bad&gt;.md" in html
+    assert "Migration report" in html
+
+
+def test_scaffold_writes_obsidian_metadata_presets(tmp_path: Path):
+    cfg = Config(
+        confluence_url="https://x.atlassian.net/wiki",
+        username="u",
+        api_token="t",
+        settings=Settings(),
+        run_id="run1",
+        run_dir=tmp_path / "run1",
+    )
+    scaffold_vault(cfg, do_git=False)
+    assert (cfg.output_path / ".obsidian" / "types.json").exists()
+    template = cfg.output_path / "Templates" / "Confluence page.md"
+    assert template.exists()
+    assert "type: confluence-page" in template.read_text(encoding="utf-8")

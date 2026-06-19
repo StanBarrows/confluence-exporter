@@ -1,1 +1,3 @@
-- Export Visualizers Dashboard See Logs, Data Statistics, and Lets us Browser through files. 
+- Export visualizer dashboard: `python -m migrator export-dashboard` renders `export/export-dashboard.html` with run checkpoints, step log events, file/count statistics, QA findings, and browseable generated files.
+- Rich migration report: `python -m migrator report` writes both `migration_report.md` and `migration_report.html`.
+- Obsidian metadata presets: `scaffold` can write `.obsidian/types.json` and `Templates/Confluence page.md` from `git.obsidian_metadata`.
